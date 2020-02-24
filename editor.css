@@ -1,0 +1,31 @@
+body {
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: 4em 1fr;
+    grid-template-areas: "Header Header""Editor Preview";
+}
+
+nav {
+    grid-area: Header;
+    display: flex;
+    flex-flow: row;
+    height: 4em;
+}
+
+nav a {
+    padding-left: 0.2em;
+    padding-right: 0.2em;
+}
+
+#editor {
+    border: 4px inset black;
+    grid-area: Editor;
+    width: 45vw;
+    height: calc(95vh - 4em);
+    white-space: pre-wrap;
+}
+
+#preview {
+    grid-area: Preview;
+    width: 45vw;
+}

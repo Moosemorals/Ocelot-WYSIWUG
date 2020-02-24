@@ -3,10 +3,22 @@
 
     <head>
         <title>Ocelot - WYSIWYG Editor</title>
+        <link rel="stylesheet" type="text/css" href="editor.css">
     </head>
 
     <body>
-        <p>Nothing yet!</p>
+        <nav id="toolbar">
+            <a class="tool" href="#" data-command='bold'>Bold</a>
+            <!--
+            <a class="tool" href="#" data-command='insertOrderedList'>Ordered list</a>
+            <a class="tool" href="#" data-command='insertUnorderedList'>Ordered list</a>
+            -->
+            <a class="tool" href="#" data-command='note'>Note</a>
+        </nav>
+        <div id="editor" contentEditable>
+        </div>
+        <div id="preview"></div>
+        <script defer type="module" src="editor.js"></script>
     </body>
 
 </html>
