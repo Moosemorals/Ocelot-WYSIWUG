@@ -49,21 +49,42 @@ function clearElement(el) {
 function insertHtml(node) {
     node.classList.add("stanza");
     $("#editor").appendChild(node);
-    updateEditor();
+    updatePreview();
 }
 
 function addCallout(type) {
     return () => insertHtml(tag("div", {
         class: "callout " + type,
         contentEditable: "true"
-    }, type));
+    }));
 }
 
 function addInstruction() {
     return () => insertHtml(tag("div", {
         class: "instruction",
         contentEditable: "true"
-    }, "instruction"));
+    }));
+}
+
+function bolden() {
+    const selection = document.getSelection();
+
+    if (selection.rangeCount === 0) {
+        return;
+    }
+    // Should only be one range
+    const range = selection.getRangeAt(0);
+
+    const s = range.extractContents();
+
+    const post = range.startContainer.splitText(range.startOffset)
+
+    const bold = tag("strong");
+    bold.appendChild(s);
+
+    range.startContainer.parentNode.insertBefore(bold, post)
+
+    updatePreview();
 }
 
 function buildCommandListener(a) {
@@ -71,11 +92,11 @@ function buildCommandListener(a) {
 
     switch (cmd) {
         case "bold":
-            return () => document.execCommand("bold", false, null);
+            return bolden;
         case "instruction":
             return addInstruction();
-        case "heading":
-            return addCallout("heading")
+        case "header":
+            return addCallout("header")
         case "note":
             return addCallout("note")
     }
@@ -105,12 +126,21 @@ function stripWhitespace(el) {
 function getText(el) {
     let result = "";
 
-    walkDom(el, node => {
+    el.normalise;
+
+    let queue = [el];
+    while (queue.length > 0) {
+        const node = queue.shift();
         if (node.nodeType === 3) {
             result += node.nodeValue;
+        } else if (node.nodeType === 1) {
+            if (node.nodeName === "STRONG") {
+                result += "[bold:" + node.firstChild.nodeValue + "]";
+            } else {
+                queue = queue.concat(Array.from(node.childNodes));
+            }
         }
-    });
-
+    }
     return result;
 }
 
@@ -151,24 +181,18 @@ function parseToStanzas(node) {
                 text: getText(c),
                 noteType: "note"
             })
-        } else if (c.classList.contains("note")) {
-            stanzas.push({
-                type: "CalloutStanza",
-                text: getText(c),
-                noteType: "note"
-            })
         } else if (c.classList.contains("header")) {
             stanzas.push({
                 type: "CalloutStanza",
                 text: getText(c),
-                noteType: "note"
+                noteType: "header"
             })
         }
     }
     return stanzas;
 }
 
-function updateEditor() {
+function updatePreview() {
     const preview = $("#preview");
     clearElement(preview);
     const stanzas = parseToStanzas($("#editor"))
@@ -177,14 +201,10 @@ function updateEditor() {
 }
 
 function init() {
-    // Set defaults
-    document.execCommand("defaultParagraphSeparator", false, "<div>")
-    document.execCommand("styleWithCSS", false, false)
-
     // Setup listeners
     document.addEventListener("keypress", handleKeys);
     $$("a.tool").forEach(a => a.addEventListener("click", buildCommandListener(a)))
-    $("#editor").addEventListener("input", updateEditor);
+    $("#editor").addEventListener("input", updatePreview);
 }
 
 

@@ -45,9 +45,18 @@ nav a {
 
 .stanza.note {
     border: 1px solid blue;
-
 }
 
-.stanza.instruction::before {
-    content: "-> "
+.stanza.note::before {
+    content: "Note: ";
+    font-weight: bold;
+}
+
+.stanza.header {
+    font-size: 140%;
+    font-weight: bold;
+}
+
+.stanza::before {
+    content: "\200B";
 }
