@@ -28,4 +28,26 @@ nav a {
 #preview {
     grid-area: Preview;
     width: 45vw;
+    white-space: pre-wrap;
+}
+
+.stanza {
+    margin: 0.2em;
+    padding: 0.1em;
+    padding-left: 1em;
+    border: 0.5px dashed grey;
+    min-height: 0.8em;
+}
+
+.stanza:active {
+    border: 0.5px solid black;
+}
+
+.stanza.note {
+    border: 1px solid blue;
+
+}
+
+.stanza.instruction::before {
+    content: "-> "
 }

@@ -18,8 +18,26 @@ function textNode(text) {
     return document.createTextNode(text);
 }
 
-function el(name) {
-    return document.createElement(name);
+function tag(name, options, ...content) {
+    const el = document.createElement(name);
+
+    if (typeof options === "string") {
+        el.setAttribute("class", options)
+    } else if (typeof options === "object") {
+        for (let key in options) {
+            if (options[key] != null) {
+                el.setAttribute(key, options[key]);
+            }
+        }
+    }
+
+    if (content != null) {
+        for (let i = 0; i < content.length; i += 1) {
+            const s = content[i];
+            el.appendChild(textNode(s));
+        }
+    }
+    return el;
 }
 
 function clearElement(el) {
@@ -28,13 +46,38 @@ function clearElement(el) {
     }
 }
 
+function insertHtml(node) {
+    node.classList.add("stanza");
+    $("#editor").appendChild(node);
+    updateEditor();
+}
+
+function addCallout(type) {
+    return () => insertHtml(tag("div", {
+        class: "callout " + type,
+        contentEditable: "true"
+    }, type));
+}
+
+function addInstruction() {
+    return () => insertHtml(tag("div", {
+        class: "instruction",
+        contentEditable: "true"
+    }, "instruction"));
+}
+
 function buildCommandListener(a) {
     const cmd = a.dataset.command;
 
-    if (cmd === "bold") {
-        return () => document.execCommand(cmd, false, null);
-    } else if (cmd === "label") {
-
+    switch (cmd) {
+        case "bold":
+            return () => document.execCommand("bold", false, null);
+        case "instruction":
+            return addInstruction();
+        case "heading":
+            return addCallout("heading")
+        case "note":
+            return addCallout("note")
     }
 }
 
@@ -71,45 +114,66 @@ function getText(el) {
     return result;
 }
 
-function parseDiv(node) {
-    return {
-        type: "InstructionStanza",
-        text: getText(node)
+function handleKeys(e) {
+    if (e.target.classList.contains("stanza") && e.keyCode === 13) {
+        e.preventDefault();
+
+        const editor = $("#editor");
+        const clone = editor.lastElementChild.cloneNode(true);
+
+        clearElement(clone);
+
+        editor.appendChild(clone);
+        clone.focus();
+
+        return false;
     }
 }
 
-function parseEditorHtml(el) {
-    const stanzas = [];
-    const children = el.childNodes;
+function parseToStanzas(node) {
 
-    for (let i = 0; i < children.length; i += 1) {
-        const node = children[i];
-        if (node.nodeType === 3) {
-            // Text node
+    const stanzas = [];
+
+    for (let i = 0; i < node.childNodes.length; i += 1) {
+        const c = node.childNodes[i];
+        if (c.nodeType !== 1 || c.nodeName !== "DIV") {
+            continue;
+        }
+
+        if (c.classList.contains("instruction")) {
             stanzas.push({
                 type: "InstructionStanza",
-                text: node.nodeValue
-            });
-        } else if (node.nodeType == 1) {
-            switch (node.nodeName) {
-                case "DIV":
-                    stanzas.push(parseDiv(node));
-                    break;
-            }
+                text: getText(c)
+            })
+        } else if (c.classList.contains("note")) {
+            stanzas.push({
+                type: "CalloutStanza",
+                text: getText(c),
+                noteType: "note"
+            })
+        } else if (c.classList.contains("note")) {
+            stanzas.push({
+                type: "CalloutStanza",
+                text: getText(c),
+                noteType: "note"
+            })
+        } else if (c.classList.contains("header")) {
+            stanzas.push({
+                type: "CalloutStanza",
+                text: getText(c),
+                noteType: "note"
+            })
         }
     }
-
     return stanzas;
 }
 
-function editorChanged() {
+function updateEditor() {
     const preview = $("#preview");
     clearElement(preview);
-    const html = $("#editor").innerHTML
-    const stanzas = parseEditorHtml($("#editor"));
-    preview.appendChild(textNode(html))
-    preview.appendChild(el("hr"))
+    const stanzas = parseToStanzas($("#editor"))
     preview.appendChild(textNode(JSON.stringify(stanzas, null, 2)))
+
 }
 
 function init() {
@@ -118,15 +182,9 @@ function init() {
     document.execCommand("styleWithCSS", false, false)
 
     // Setup listeners
+    document.addEventListener("keypress", handleKeys);
     $$("a.tool").forEach(a => a.addEventListener("click", buildCommandListener(a)))
-    $("#editor").addEventListener("input", editorChanged);
-
-    // Clean whitespace from the default editor
-    // blame VSC
-    stripWhitespace($("#editor"));
-
-    // Show the default preview
-    editorChanged();
+    $("#editor").addEventListener("input", updateEditor);
 }
 
 
